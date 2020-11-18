@@ -28,8 +28,28 @@ if (!class_exists('SeedObject'))
 class isiworkconnector extends SeedObject
 {
     /**
-     * Canceled status
+     * @param string $query
+     * @return array
      */
+    function parseQuery($query ='')
+    {
+        $query = "https://armoires.Zeendoc.com/_WebServices/Upload/0_3/Edit_Source.php?Login=tests_webservices@Zee";
+        $query .=    "ndoc.com&CPassword=tests01&Url_Client=tests_webservices&Coll_Id=coll_1&Titre=Nom";
+        $query .=    "source&Id_Type_Source=35";
+        $fields = array();
+
+        foreach (explode('&', $query) as $q)
+        {
+            $q = explode('=', $q, 2);
+            if ('' === $q[0]) continue;
+            $q = array_map('urldecode', $q);
+            $fields[$q[0]][] = isset($q[1]) ? $q[1] : '';
+        }
+
+        return $fields;
+    }
+
+
     const STATUS_CANCELED = -1;
     /**
      * Draft status
