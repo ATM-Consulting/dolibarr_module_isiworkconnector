@@ -27,15 +27,81 @@ if (!class_exists('SeedObject'))
 
 class isiworkconnector extends SeedObject
 {
+
+    public $Login;
+    public $Password;
+    public $urlClient;
+    Public $baseUrl;
+    public $lastXmlResult;
+
+    const  URI_EDIT_END_POINT = "Edit_Source.php?";
+    const  URI_PRE_UPLOAD_END_POINT = "Pre_Upload.php?";
+    const  URI_UPLOAD_END_POINT = "Upload.php?";
+    const  URI_POST_UPLOAD_END_POINT = "Post_Upload.php?";
+
+    const  CONTEXT_SOURCE_ID  = 1;
+    const  CONTEXT_PRE_UPLOAD_VALIDATION  = 2;
+    const  CONTEXT_UPLOAD  = 3;
+    const  CONTEXT_UPLOAD_MYLAB  = 4;
+
+
+    /**
+    * isiworkconnector constructor.
+     *
+     * @param DoliDB $db
+     */
+    function __construct(DoliDB &$db) {
+        global $conf;
+        parent::__construct($db);
+
+    }
+
+    /**
+     * @param string $login
+     * @param string $password
+     * @param string $urlClient
+     * @param string $baseUrl
+     */
+    public function setCredentials($login,$password,$urlClient,$baseUrl){
+        $this->Login        = $login;
+        $this->Password     = $password;
+        $this->urlClient    = $urlClient;
+        $this->baseUrl      = $baseUrl;
+    }
+
+    /**
+
+     */
+    public function checkConnection(){
+        // -1   /    >  0 SOurceId
+
+        $params = array();
+        $params['Coll_Id'] ='coll_1';
+        $params['Titre'] = 'Nomsource';
+
+        $result = $this->callCurl(self::CONTEXT_SOURCE_ID, $params);
+
+        return $result == -1 ? 0 : 1 ;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getLastXmlErrorMsg(){
+
+        var_dump($this->lastXmlResult);exit;
+        if (isset($this->lastXmlResult)){
+            return (string) $this->lastXmlResult->Error_Msg;
+        }
+    }
+
     /**
      * @param string $query
      * @return array
      */
-    function parseQuery($query ='')
+    function parseQuery($query = '')
     {
-        $query = "https://armoires.Zeendoc.com/_WebServices/Upload/0_3/Edit_Source.php?Login=tests_webservices@Zee";
-        $query .=    "ndoc.com&CPassword=tests01&Url_Client=tests_webservices&Coll_Id=coll_1&Titre=Nom";
-        $query .=    "source&Id_Type_Source=35";
+
         $fields = array();
 
         foreach (explode('&', $query) as $q)
@@ -50,456 +116,135 @@ class isiworkconnector extends SeedObject
     }
 
 
-    const STATUS_CANCELED = -1;
-    /**
-     * Draft status
-     */
-    const STATUS_DRAFT = 0;
-	/**
-	 * Validated status
-	 */
-	const STATUS_VALIDATED = 1;
-	/**
-	 * Refused status
-	 */
-	const STATUS_REFUSED = 3;
-	/**
-	 * Accepted status
-	 */
-	const STATUS_ACCEPTED = 4;
-
-	/** @var array $TStatus Array of translate key for each const */
-	public static $TStatus = array(
-		self::STATUS_CANCELED => 'isiworkconnectorStatusShortCanceled'
-		,self::STATUS_DRAFT => 'isiworkconnectorStatusShortDraft'
-		,self::STATUS_VALIDATED => 'isiworkconnectorStatusShortValidated'
-//		,self::STATUS_REFUSED => 'isiworkconnectorStatusShortRefused'
-//		,self::STATUS_ACCEPTED => 'isiworkconnectorStatusShortAccepted'
-	);
-
-	/** @var string $table_element Table name in SQL */
-	public $table_element = 'isiworkconnector';
-
-	/** @var string $element Name of the element (tip for better integration in Dolibarr: this value should be the reflection of the class name with ucfirst() function) */
-	public $element = 'isiworkconnector';
-
-	/** @var int $isextrafieldmanaged Enable the fictionalises of extrafields */
-    public $isextrafieldmanaged = 1;
-
-    /** @var int $ismultientitymanaged 0=No test on entity, 1=Test with field entity, 2=Test with link by societe */
-    public $ismultientitymanaged = 1;
 
     /**
-     *  'type' is the field format.
-     *  'label' the translation key.
-     *  'enabled' is a condition when the field must be managed.
-     *  'visible' says if field is visible in list (Examples: 0=Not visible, 1=Visible on list and create/update/view forms, 2=Visible on list only, 3=Visible on create/update/view form only (not list), 4=Visible on list and update/view form only (not create). Using a negative value means field is not shown by default on list but can be selected for viewing)
-     *  'noteditable' says if field is not editable (1 or 0)
-     *  'notnull' is set to 1 if not null in database. Set to -1 if we must set data to null if empty ('' or 0).
-     *  'default' is a default value for creation (can still be replaced by the global setup of default values)
-     *  'index' if we want an index in database.
-     *  'foreignkey'=>'tablename.field' if the field is a foreign key (it is recommanded to name the field fk_...).
-     *  'position' is the sort order of field.
-     *  'searchall' is 1 if we want to search in this field when making a search from the quick search button.
-     *  'isameasure' must be set to 1 if you want to have a total on list for this field. Field type must be summable like integer or double(24,8).
-     *  'css' is the CSS style to use on field. For example: 'maxwidth200'
-     *  'help' is a string visible as a tooltip on field
-     *  'comment' is not used. You can store here any text of your choice. It is not used by application.
-     *  'showoncombobox' if value of the field must be visible into the label of the combobox that list record
-     *  'arraykeyval' to set list of value if type is a list of predefined values. For example: array("0"=>"Draft","1"=>"Active","-1"=>"Cancel")
+     * @param int $context
+     * @param mixed $params
+     * @return int | SimpleXMLElement | string[]
      */
+    public function callCurl($context,$params){
 
-    public $fields = array(
+        $baseUrl  = $this->getCustomUri($context,$params);
 
-        'ref' => array(
-            'type' => 'varchar(50)',
-            'length' => 50,
-            'label' => 'Ref',
-            'enabled' => 1,
-            'visible' => 1,
-            'notnull' => 1,
-            'showoncombobox' => 1,
-            'index' => 1,
-            'position' => 10,
-            'searchall' => 1,
-            'comment' => 'Reference of object'
-        ),
+        try{
+            $ch = curl_init();
 
-        'entity' => array(
-            'type' => 'integer',
-            'label' => 'Entity',
-            'enabled' => 1,
-            'visible' => 0,
-            'default' => 1,
-            'notnull' => 1,
-            'index' => 1,
-            'position' => 20
-        ),
+            // Check if initialization had gone wrong*
+            if ($ch === false) {
+                throw new Exception('failed to initialize');
+            }
+            curl_setopt($ch, CURLOPT_URL, $baseUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
-        'status' => array(
-            'type' => 'integer',
-            'label' => 'Status',
-            'enabled' => 1,
-            'visible' => 0,
-            'notnull' => 1,
-            'default' => 0,
-            'index' => 1,
-            'position' => 30,
-            'arrayofkeyval' => array(
-                0 => 'Draft',
-                1 => 'Active',
-                -1 => 'Canceled'
-            )
-        ),
+            if ($context == self::CONTEXT_UPLOAD){
 
-        'label' => array(
-            'type' => 'varchar(255)',
-            'label' => 'Label',
-            'enabled' => 1,
-            'visible' => 1,
-            'position' => 40,
-            'searchall' => 1,
-            'css' => 'minwidth200',
-            'help' => 'Help text',
-            'showoncombobox' => 1
-        ),
+				// Prepare a file to be sended
+                curl_setopt($ch, CURLOPT_POST, true);
+                // Extract file's extension
+               $ext = substr(strrchr($params['fileName'], '.'), 0);
+               $fullPath = DOL_DATA_ROOT .'/'. $params['path'] ."/". $params['fileName'];
 
-        'fk_soc' => array(
-            'type' => 'integer:Societe:societe/class/societe.class.php',
-            'label' => 'ThirdParty',
-            'visible' => 1,
-            'enabled' => 1,
-            'position' => 50,
-            'index' => 1,
-            'help' => 'LinkToThirparty'
-        ),
+               $data = array('file' => "@" . $fullPath . ";filename=".$params['upload_id'].$ext);
+               var_dump($data['file']);
+               curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 
-        'description' => array(
-            'type' => 'text', // or html for WYSWYG
-            'label' => 'Description',
-            'enabled' => 1,
-            'visible' => -1, //  un bug sur la version 9.0 de Dolibarr necessite de mettre -1 pour ne pas apparaitre sur les listes au lieu de la valeur 3
-            'position' => 60
-        ),
+            }
 
-//        'fk_user_valid' =>array(
-//            'type' => 'integer',
-//            'label' => 'UserValidation',
-//            'enabled' => 1,
-//            'visible' => -1,
-//            'position' => 512
-//        ),
+            // Réponse de l'exécution Curl sous forme de chaîne de caractères contenant du xml
+            $content = curl_exec($ch);
 
-        'import_key' => array(
-            'type' => 'varchar(14)',
-            'label' => 'ImportId',
-            'enabled' => 1,
-            'visible' => -2,
-            'notnull' => -1,
-            'index' => 0,
-            'position' => 1000
-        ),
+            // Check the return value of curl_exec(), too
+            if ($content === false) {
+                throw new Exception(curl_error($ch), curl_errno($ch));
+                setEventMessage($langs->trans('ErrorCurlCall'),"errors");
+                return 0;
+            }else{
+	            // Transforme le $content en un objet xml utilisable
+                $xml = simplexml_load_string($content);
+                $this->lastXmlResult = $xml;
 
-    );
+                switch($context){
 
-    /** @var string $ref Object reference */
-	public $ref;
+                    case SELF::CONTEXT_SOURCE_ID:
+                        if(isset($xml->Id_Source)){
+                            return (int) $xml->Id_Source;
+                        }else{
+                            return $xml->Result;
+                        }
 
-    /** @var int $entity Object entity */
-	public $entity;
+                    case SELF::CONTEXT_PRE_UPLOAD_VALIDATION:
 
-	/** @var int $status Object status */
-	public $status;
+                        if(isset($xml->Result) && $xml->Result == 0 ){
+                            $result = ['success'=> "ok",'Upload_Id' => (string) $xml->Upload_Id ];
+                            return $result; //46PBolM5XnCThWNzDYUHK7s0k2ZJVfcI
+                        }else{
+                            $result = ['success'=> "ko",'Error_Msg' => (string) $xml->Error_Msg ];
+                            return $result; // upload
+                        }
 
-    /** @var string $label Object label */
-    public $label;
+                    case SELF::CONTEXT_UPLOAD:
+                        var_dump($content);exit;
+                        break;
+                }
+            }
 
-    /** @var string $description Object description */
-    public $description;
-
-
-
-    /**
-     * isiworkconnector constructor.
-     * @param DoliDB    $db    Database connector
-     */
-    public function __construct($db)
-    {
-		global $conf;
-
-        parent::__construct($db);
-
-		$this->init();
-
-		$this->status = self::STATUS_DRAFT;
-		$this->entity = $conf->entity;
-    }
-
-    /**
-     * @param User $user User object
-     * @return int
-     */
-    public function save($user)
-    {
-        if (!empty($this->is_clone))
-        {
-            // TODO determinate if auto generate
-            $this->ref = '(PROV'.$this->id.')';
+            curl_close($ch);
+        }catch(Exception $e) {
+            trigger_error(sprintf(
+                'Curl failed with error #%d: %s',
+                $e->getCode(), $e->getMessage()),
+                E_USER_ERROR);
         }
 
-        return $this->create($user);
-    }
 
 
-    /**
-     * @see cloneObject
-     * @return void
-     */
-    public function clearUniqueFields()
-    {
-        $this->ref = 'Copy of '.$this->ref;
-    }
-
-
-    /**
-     * @param User $user User object
-     * @return int
-     */
-    public function delete(User &$user)
-    {
-        $this->deleteObjectLinked();
-
-        unset($this->fk_element); // avoid conflict with standard Dolibarr comportment
-        return parent::delete($user);
     }
 
     /**
+     * @param int $context
+     * @param mixed $params
      * @return string
      */
-    public function getRef()
-    {
-		if (preg_match('/^[\(]?PROV/i', $this->ref) || empty($this->ref))
-		{
-			return $this->getNextRef();
-		}
+    public function getCustomUri($context,$params){
+        $baseUrl = "";
+        switch($context){
+            case self::CONTEXT_SOURCE_ID :
 
-		return $this->ref;
-    }
+                $baseUrl = $this->baseUrl . SELF::URI_EDIT_END_POINT;
+                $baseUrl.= 'Login='.$this->Login
+                    .'&CPassword='.$this->Password
+                    .'&Url_Client='.$this->urlClient
+                    .'&Coll_Id='.$params['Coll_Id']
+                    .'&Titre='.$params['Titre']
+                    .'&Id_Type_Source=5';
 
-    /**
-     * @return string
-     */
-    private function getNextRef()
-    {
-		global $db,$conf;
-
-		require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
-
-		$mask = !empty($conf->global->ISIWORKCONNECTOR_REF_MASK) ? $conf->global->ISIWORKCONNECTOR_REF_MASK : 'MM{yy}{mm}-{0000}';
-		$ref = get_next_value($db, $mask, 'isiworkconnector', 'ref');
-
-		return $ref;
-    }
+                return $baseUrl;
 
 
-    /**
-     * @param User  $user   User object
-     * @return int
-     */
-    public function setDraft($user)
-    {
-        if ($this->status === self::STATUS_VALIDATED)
-        {
-            $this->status = self::STATUS_DRAFT;
-            $this->withChild = false;
+            case self::CONTEXT_PRE_UPLOAD_VALIDATION :
 
-            return $this->update($user);
+                $baseUrl = $this->baseUrl . SELF::URI_PRE_UPLOAD_END_POINT;
+                $baseUrl.= 'Login='.$this->Login
+                    .'&CPassword='.$this->Password
+                    .'&Url_Client='.$this->urlClient
+                    .'&Coll_Id='.$params['Coll_Id']
+                    .'&FileName='.$params['fileName']
+                    .'&MD5='.$params['md5FileName']
+                    .'&Id_Source='.$params['sourceId'];
+
+	            return $baseUrl;
+
+            case self::CONTEXT_UPLOAD :
+                $baseUrl = $this->baseUrl . SELF::URI_UPLOAD_END_POINT;
+                $baseUrl.= 'Login='.$this->Login
+                    .'&CPassword='.$this->Password
+                    .'&Url_Client='.$this->urlClient
+                    .'&Coll_Id='.$params['Coll_Id'];
+
+                return $baseUrl;
         }
 
-        return 0;
-    }
-
-    /**
-     * @param User  $user   User object
-     * @return int
-     */
-    public function setValid($user)
-    {
-        if ($this->status === self::STATUS_DRAFT)
-        {
-            // TODO determinate if auto generate
-//            $this->ref = $this->getRef();
-//            $this->fk_user_valid = $user->id;
-            $this->status = self::STATUS_VALIDATED;
-            $this->withChild = false;
-
-            return $this->update($user);
-        }
-
-        return 0;
-    }
-
-    /**
-     * @param User  $user   User object
-     * @return int
-     */
-    public function setAccepted($user)
-    {
-        if ($this->status === self::STATUS_VALIDATED)
-        {
-            $this->status = self::STATUS_ACCEPTED;
-            $this->withChild = false;
-
-            return $this->update($user);
-        }
-
-        return 0;
-    }
-
-    /**
-     * @param User  $user   User object
-     * @return int
-     */
-    public function setRefused($user)
-    {
-        if ($this->status === self::STATUS_VALIDATED)
-        {
-            $this->status = self::STATUS_REFUSED;
-            $this->withChild = false;
-
-            return $this->update($user);
-        }
-
-        return 0;
-    }
-
-    /**
-     * @param User  $user   User object
-     * @return int
-     */
-    public function setReopen($user)
-    {
-        if ($this->status === self::STATUS_ACCEPTED || $this->status === self::STATUS_REFUSED)
-        {
-            $this->status = self::STATUS_VALIDATED;
-            $this->withChild = false;
-
-            return $this->update($user);
-        }
-
-        return 0;
-    }
-
-
-    /**
-     * @param int    $withpicto     Add picto into link
-     * @param string $moreparams    Add more parameters in the URL
-     * @return string
-     */
-    public function getNomUrl($withpicto = 0, $moreparams = '')
-    {
-		global $langs;
-
-        $result='';
-        $label = '<u>' . $langs->trans("Showisiworkconnector") . '</u>';
-        if (! empty($this->ref)) $label.= '<br><b>'.$langs->trans('Ref').':</b> '.$this->ref;
-
-        $linkclose = '" title="'.dol_escape_htmltag($label, 1).'" class="classfortooltip">';
-        $link = '<a href="'.dol_buildpath('/isiworkconnector/card.php', 1).'?id='.$this->id.urlencode($moreparams).$linkclose;
-
-        $linkend='</a>';
-
-        $picto='generic';
-//        $picto='isiworkconnector@isiworkconnector';
-
-        if ($withpicto) $result.=($link.img_object($label, $picto, 'class="classfortooltip"').$linkend);
-        if ($withpicto && $withpicto != 2) $result.=' ';
-
-        $result.=$link.$this->ref.$linkend;
-
-        return $result;
-    }
-
-    /**
-     * @param int       $id             Identifiant
-     * @param null      $ref            Ref
-     * @param int       $withpicto      Add picto into link
-     * @param string    $moreparams     Add more parameters in the URL
-     * @return string
-     */
-    public static function getStaticNomUrl($id, $ref = null, $withpicto = 0, $moreparams = '')
-    {
-		global $db;
-
-		$object = new isiworkconnector($db);
-		$object->fetch($id, false, $ref);
-
-		return $object->getNomUrl($withpicto, $moreparams);
-    }
-
-
-    /**
-     * @param int $mode     0=Long label, 1=Short label, 2=Picto + Short label, 3=Picto, 4=Picto + Long label, 5=Short label + Picto, 6=Long label + Picto
-     * @return string
-     */
-    public function getLibStatut($mode = 0)
-    {
-        return self::LibStatut($this->status, $mode);
-    }
-
-    /**
-     * @param int       $status   Status
-     * @param int       $mode     0=Long label, 1=Short label, 2=Picto + Short label, 3=Picto, 4=Picto + Long label, 5=Short label + Picto, 6=Long label + Picto
-     * @return string
-     */
-    public static function LibStatut($status, $mode)
-    {
-		global $langs;
-
-		$langs->load('isiworkconnector@isiworkconnector');
-        $res = '';
-
-        if ($status==self::STATUS_CANCELED) { $statusType='status9'; $statusLabel=$langs->trans('isiworkconnectorStatusCancel'); $statusLabelShort=$langs->trans('isiworkconnectorStatusShortCancel'); }
-        elseif ($status==self::STATUS_DRAFT) { $statusType='status0'; $statusLabel=$langs->trans('isiworkconnectorStatusDraft'); $statusLabelShort=$langs->trans('isiworkconnectorStatusShortDraft'); }
-        elseif ($status==self::STATUS_VALIDATED) { $statusType='status1'; $statusLabel=$langs->trans('isiworkconnectorStatusValidated'); $statusLabelShort=$langs->trans('isiworkconnectorStatusShortValidate'); }
-        elseif ($status==self::STATUS_REFUSED) { $statusType='status5'; $statusLabel=$langs->trans('isiworkconnectorStatusRefused'); $statusLabelShort=$langs->trans('isiworkconnectorStatusShortRefused'); }
-        elseif ($status==self::STATUS_ACCEPTED) { $statusType='status6'; $statusLabel=$langs->trans('isiworkconnectorStatusAccepted'); $statusLabelShort=$langs->trans('isiworkconnectorStatusShortAccepted'); }
-
-        if (function_exists('dolGetStatus'))
-        {
-            $res = dolGetStatus($statusLabel, $statusLabelShort, '', $statusType, $mode);
-        }
-        else
-        {
-            if ($mode == 0) $res = $statusLabel;
-            elseif ($mode == 1) $res = $statusLabelShort;
-            elseif ($mode == 2) $res = img_picto($statusLabel, $statusType).$statusLabelShort;
-            elseif ($mode == 3) $res = img_picto($statusLabel, $statusType);
-            elseif ($mode == 4) $res = img_picto($statusLabel, $statusType).$statusLabel;
-            elseif ($mode == 5) $res = $statusLabelShort.img_picto($statusLabel, $statusType);
-            elseif ($mode == 6) $res = $statusLabel.img_picto($statusLabel, $statusType);
-        }
-        
-        return $res;
-    }
+}
 }
 
 
-//class isiworkconnectorDet extends SeedObject
-//{
-//    public $table_element = 'isiworkconnectordet';
-//
-//    public $element = 'isiworkconnectordet';
-//
-//
-//    /**
-//     * isiworkconnectorDet constructor.
-//     * @param DoliDB    $db    Database connector
-//     */
-//    public function __construct($db)
-//    {
-//        $this->db = $db;
-//
-//        $this->init();
-//    }
-//}
