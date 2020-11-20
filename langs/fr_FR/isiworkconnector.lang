@@ -52,3 +52,5 @@ ConfirmValidateisiworkconnectorBody=Souhaitez-vous vraiment activer cette fiche 
 
 ConfirmDeleteisiworkconnectorTitle=Confirmation de suppression
 ConfirmDeleteisiworkconnectorBody=Souhaitez-vous vraiment supprimer cette fiche isiworkconnector %s ?
+
+ErrorApiCall=Erreur lors de l'appel au service

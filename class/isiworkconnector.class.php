@@ -62,11 +62,12 @@ class Isiworkconnector extends SeedObject
      * @param string $urlClient
      * @param string $baseUrl
      */
-    public function setCredentials($login,$password,$urlClient,$baseUrl){
-        $this->Login        = $login;
-        $this->Password     = $password;
-        $this->urlClient    = $urlClient;
-        $this->baseUrl      = $baseUrl;
+    public function setCredentials($accountCredentials){
+
+        $this->Login        = $accountCredentials->login;
+        $this->Password     = $accountCredentials->password;
+        $this->urlClient    = $accountCredentials->urlClient;
+        $this->baseUrl      = $accountCredentials->baseUrl;
     }
 
     /**
@@ -78,9 +79,7 @@ class Isiworkconnector extends SeedObject
         $params = array();
         $params['Coll_Id'] ='coll_1';
         $params['Titre'] = 'Nomsource';
-
-        $result = $this->callCurl(self::CONTEXT_SOURCE_ID, $params);
-
+        $result = $this->sendQuery(self::CONTEXT_SOURCE_ID, $params);
         return $result == -1 ? 0 : 1 ;
     }
 
@@ -116,51 +115,28 @@ class Isiworkconnector extends SeedObject
     }
 
 
-
     /**
      * @param int $context
      * @param mixed $params
      * @return int | SimpleXMLElement | string[]
      */
-    public function callCurl($context,$params){
+    public function sendQuery($context,$params){
 
+    	global $langs;
         $baseUrl  = $this->getCustomUri($context,$params);
 
         try{
-            $ch = curl_init();
 
-            // Check if initialization had gone wrong*
-            if ($ch === false) {
-                throw new Exception('failed to initialize');
-            }
-            curl_setopt($ch, CURLOPT_URL, $baseUrl);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-
-            if ($context == self::CONTEXT_UPLOAD){
-
-				// Prepare a file to be sended
-                curl_setopt($ch, CURLOPT_POST, true);
-                // Extract file's extension
-               $ext = substr(strrchr($params['fileName'], '.'), 0);
-               $fullPath = DOL_DATA_ROOT .'/'. $params['path'] ."/". $params['fileName'];
-
-               $data = array('file' => "@" . $fullPath . ";filename=".$params['upload_id'].$ext);
-               var_dump($data['file']);
-               curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-
-            }
-
-            // Réponse de l'exécution Curl sous forme de chaîne de caractères contenant du xml
-            $content = curl_exec($ch);
-
+            $dataResult = file_get_contents($this->getCustomUri($context,$params) , null);
             // Check the return value of curl_exec(), too
-            if ($content === false) {
-                throw new Exception(curl_error($ch), curl_errno($ch));
-                setEventMessage($langs->trans('ErrorCurlCall'),"errors");
+
+            if ($dataResult === false) {
+                setEventMessage($langs->trans('ErrorApiCall'),"errors");
                 return 0;
+
             }else{
 	            // Transforme le $content en un objet xml utilisable
-                $xml = simplexml_load_string($content);
+                $xml = simplexml_load_string($dataResult);
                 $this->lastXmlResult = $xml;
 
                 switch($context){
@@ -183,15 +159,14 @@ class Isiworkconnector extends SeedObject
                         }
 
                     case SELF::CONTEXT_UPLOAD:
-                        var_dump($content);exit;
+                        var_dump($dataResult);exit;
                         break;
                 }
             }
 
-            curl_close($ch);
         }catch(Exception $e) {
             trigger_error(sprintf(
-                'Curl failed with error #%d: %s',
+                'call Api failed with error #%d: %s',
                 $e->getCode(), $e->getMessage()),
                 E_USER_ERROR);
         }
@@ -245,6 +220,72 @@ class Isiworkconnector extends SeedObject
         }
 
 }
+
+    /**
+     *
+     */
+    public function test($credentials,$contextApi,$params){
+
+        $data_json = json_encode($credentials);
+
+
+        $options = [
+            'http' => [
+                'protocol_version' => 1.1,
+                'method' => "POST",
+                'header' => "application/soap+xml",
+                'content' => $data_json,
+                "timeout" => (float) 10.0
+            ],
+            'ssl' => [
+                'allow_self_signed' => true,
+                'verify_peer' => false,
+                'verify_peer_name' => false
+            ]
+        ];
+
+
+        /*
+         * <?php
+			file_get_contents can do a POST, create a context for that first:
+
+			$opts = array('http' =>
+			  array(
+			    'method'  => 'POST',
+			    'header'  => "Content-Type: text/xml\r\n".
+			      "Authorization: Basic ".base64_encode("$https_user:$https_password")."\r\n",
+			    'content' => $body,
+			    'timeout' => 60
+			  )
+			);
+
+			$context  = stream_context_create($opts);
+			$url = 'https://'.$https_server;
+			$result = file_get_contents($url, false, $context, -1, 40000);
+
+			?>
+         */
+
+        $context = stream_context_create($options);
+        var_dump($context);
+        var_dump($this->getCustomUri($contextApi,$params));
+
+        $dataResult = file_get_contents($this->getCustomUri($contextApi,$params) , null);
+        //$this->http_response_header = self::parseHeaders($http_response_header);
+
+        var_dump($dataResult);exit;
+        if($dataResult) {
+            $dataResponse = json_decode($dataResult);
+            if($dataResponse) {
+                return $dataResponse;
+            }
+
+        }
+
+
+
+    }
+
 }
 
 
