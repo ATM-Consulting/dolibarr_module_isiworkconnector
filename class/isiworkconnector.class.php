@@ -25,7 +25,7 @@ if (!class_exists('SeedObject'))
 }
 
 
-class isiworkconnector extends SeedObject
+class Isiworkconnector extends SeedObject
 {
 
     public $Login;
