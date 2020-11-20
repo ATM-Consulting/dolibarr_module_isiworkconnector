@@ -123,12 +123,46 @@ class Isiworkconnector extends SeedObject
     public function sendQuery($context,$params){
 
     	global $langs;
+    	$eol = "\r\n";
         $baseUrl  = $this->getCustomUri($context,$params);
-
+        var_dump($baseUrl,$context);
         try{
 
-            $dataResult = file_get_contents($this->getCustomUri($context,$params) , null);
-            // Check the return value of curl_exec(), too
+            if ($context !=Self::CONTEXT_UPLOAD) {
+                // not upload
+                $dataResult = file_get_contents($this->getCustomUri($context, $params), null);
+
+            }else{
+                // upload
+                define('MULTIPART_BOUNDARY', '--------------------------'.microtime(true));
+                // equivalent to <input type="file" name="uploaded_file"/>
+                define('FORM_FIELD', 'Upload_File');
+
+                $filename = DOL_DATA_ROOT .'/'. $params['path'].'/'.$params['fileName'];
+                var_dump($filename);
+                $file_contents = file_get_contents($filename);
+                $ext = substr(strrchr($params['fileName'], '.'), 0);
+
+                $header = 'Content-Type: multipart/form-data; boundary='.MULTIPART_BOUNDARY.$eol;
+                $content =  "--".MULTIPART_BOUNDARY.$eol.
+                "Content-Length: ". strlen($filename).$eol.$eol.$file_contents.$eol.
+                "Content-Type: ". mime_content_type($filename).$eol.$eol.
+                "Content-Disposition: form-data; name=\"".FORM_FIELD."\"; filename=\"".$params['upload_id'].$ext.'"'.$eol;
+
+
+                $context = stream_context_create(
+                    array(
+                        'http' => array(
+                                'method' => 'POST',
+                                'header' => $header,
+                                'content' => $content,
+                        )
+                    ));
+
+                var_dump($content);
+                $dataResult = file_get_contents($baseUrl, false, $context);
+                var_dump("dataResult : " ,$dataResult);exit;
+            }
 
             if ($dataResult === false) {
                 setEventMessage($langs->trans('ErrorApiCall'),"errors");
@@ -159,7 +193,7 @@ class Isiworkconnector extends SeedObject
                         }
 
                     case SELF::CONTEXT_UPLOAD:
-                        var_dump($dataResult);exit;
+                       // var_dump($dataResult);exit;
                         break;
                 }
             }
@@ -210,6 +244,7 @@ class Isiworkconnector extends SeedObject
 	            return $baseUrl;
 
             case self::CONTEXT_UPLOAD :
+
                 $baseUrl = $this->baseUrl . SELF::URI_UPLOAD_END_POINT;
                 $baseUrl.= 'Login='.$this->Login
                     .'&CPassword='.$this->Password
@@ -244,36 +279,12 @@ class Isiworkconnector extends SeedObject
             ]
         ];
 
-
-        /*
-         * <?php
-			file_get_contents can do a POST, create a context for that first:
-
-			$opts = array('http' =>
-			  array(
-			    'method'  => 'POST',
-			    'header'  => "Content-Type: text/xml\r\n".
-			      "Authorization: Basic ".base64_encode("$https_user:$https_password")."\r\n",
-			    'content' => $body,
-			    'timeout' => 60
-			  )
-			);
-
-			$context  = stream_context_create($opts);
-			$url = 'https://'.$https_server;
-			$result = file_get_contents($url, false, $context, -1, 40000);
-
-			?>
-         */
-
         $context = stream_context_create($options);
-        var_dump($context);
-        var_dump($this->getCustomUri($contextApi,$params));
 
         $dataResult = file_get_contents($this->getCustomUri($contextApi,$params) , null);
         //$this->http_response_header = self::parseHeaders($http_response_header);
 
-        var_dump($dataResult);exit;
+       // var_dump($dataResult);exit;
         if($dataResult) {
             $dataResponse = json_decode($dataResult);
             if($dataResponse) {
