@@ -38,4 +38,6 @@ abstract class Connector extends SeedObject {
      * Function that need to be override by children
      */
      abstract function getCustomUri($context,$params);
+
+
 }

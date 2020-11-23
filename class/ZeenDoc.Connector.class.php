@@ -26,7 +26,7 @@ if (!class_exists('SeedObject'))
 }
 
 
-class ZennDocConnector extends Connector
+class ZeenDocConnector extends Connector
 {
 
 
@@ -97,7 +97,6 @@ class ZennDocConnector extends Connector
             return (string) $this->lastXmlResult->Error_Msg;
         }
     }
-
 
     /**
      * @param  int $context

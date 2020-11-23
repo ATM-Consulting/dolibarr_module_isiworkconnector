@@ -31,7 +31,7 @@ if (! $res) {
  * Config of extrafield page for isiworkconnector
  */
 require_once '../lib/isiworkconnector.lib.php';
-require_once '../class/ZennDoc.Connector.class.php';
+require_once '../class/ZeenDoc.Connector.class.php';
 $langs->loadLangs(array('isiworkconnector@isiworkconnector', 'admin', 'other'));
 
 $isiworkconnector = new isiworkconnector($db);
