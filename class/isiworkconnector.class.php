@@ -17,11 +17,11 @@
 
 if (!class_exists('SeedObject'))
 {
-	/**
-	 * Needed if $form->showLinkedObjectBlock() is call or for session timeout on our module page
-	 */
-	define('INC_FROM_DOLIBARR', true);
-	require_once dirname(__FILE__).'/../config.php';
+    /**
+     * Needed if $form->showLinkedObjectBlock() is call or for session timeout on our module page
+     */
+    define('INC_FROM_DOLIBARR', true);
+    require_once dirname(__FILE__).'/../config.php';
 }
 
 
@@ -42,11 +42,11 @@ class Isiworkconnector extends SeedObject
     const  CONTEXT_SOURCE_ID  = 1;
     const  CONTEXT_PRE_UPLOAD_VALIDATION  = 2;
     const  CONTEXT_UPLOAD  = 3;
-    const  CONTEXT_UPLOAD_MYLAB  = 4;
+    const  CONTEXT_POST_UPLOAD  = 4;
 
 
     /**
-    * isiworkconnector constructor.
+     * isiworkconnector constructor.
      *
      * @param DoliDB $db
      */
@@ -66,15 +66,14 @@ class Isiworkconnector extends SeedObject
 
         $this->Login        = $accountCredentials->login;
         $this->Password     = $accountCredentials->password;
-        $this->urlClient    = $accountCredentials->urlClient;
+        $this->urlClient    = $accountCredentials->urlclient;
         $this->baseUrl      = $accountCredentials->baseUrl;
     }
 
     /**
-
      */
     public function checkConnection(){
-        // -1   /    >  0 SOurceId
+        // -1   /    >  0 SourceId
 
         $params = array();
         $params['Coll_Id'] ='coll_1';
@@ -88,116 +87,111 @@ class Isiworkconnector extends SeedObject
      */
     public function getLastXmlErrorMsg(){
 
-        var_dump($this->lastXmlResult);exit;
         if (isset($this->lastXmlResult)){
             return (string) $this->lastXmlResult->Error_Msg;
         }
     }
 
-    /**
-     * @param string $query
-     * @return array
-     */
-    function parseQuery($query = '')
-    {
-
-        $fields = array();
-
-        foreach (explode('&', $query) as $q)
-        {
-            $q = explode('=', $q, 2);
-            if ('' === $q[0]) continue;
-            $q = array_map('urldecode', $q);
-            $fields[$q[0]][] = isset($q[1]) ? $q[1] : '';
-        }
-
-        return $fields;
-    }
-
 
     /**
-     * @param int $context
-     * @param mixed $params
+     * @param  int $context
+     * @param  mixed $params
      * @return int | SimpleXMLElement | string[]
      */
     public function sendQuery($context,$params){
 
-    	global $langs;
-    	$eol = "\r\n";
+        global $langs;
+        // Construit l'url correcte selon le contexte donné en paramètre
         $baseUrl  = $this->getCustomUri($context,$params);
-       // var_dump($baseUrl,$context);
-        try{
 
-            if ($context !=Self::CONTEXT_UPLOAD) {
-                // not upload
-                $dataResult = file_get_contents($this->getCustomUri($context, $params), null);
+        $dataResult = file_get_contents($baseUrl, false);
+        // Transforme le $dataResult en un objet xml utilisable
+        $xml = simplexml_load_string($dataResult);
+        // Pour afficher les erreurs eventuelles depuis le cron
+        $this->lastXmlResult = $xml;
 
-            }else{
-                // upload ...
-                define('MULTIPART_BOUNDARY', '--------------------------'.microtime(true));
-                $header = 'Content-Type: multipart/form-data; boundary='.MULTIPART_BOUNDARY.$eol;
-                define('FORM_FIELD', 'Upload_File');
+        try {
 
-                $filePath =     '/'. $params['path'].'/'.$params['fileName'];
-                $filename = DOL_DATA_ROOT .$filePath;
+            switch ($context) {
 
+                case self::CONTEXT_SOURCE_ID :
+                    if (isset($xml->Id_Source)) {
+                        return (int)$xml->Id_Source;
+                    } else {
+                        return $xml->Result;
+                    }
+                    break;
 
-                $file_contents = file_get_contents($filename,true);
-                $ext = substr(strrchr($params['fileName'], '.'), 0);
+                case self::CONTEXT_PRE_UPLOAD_VALIDATION :
 
+                    if (isset($xml->Result) && $xml->Result == 0) {
+                        $result = ['success' => "ok", 'Upload_Id' => (string)$xml->Upload_Id];
+                        return $result;
+                    } else {
+                        $result = ['success' => "ko", 'Error_Msg' => (string)$xml->Error_Msg];
+                        return $result;
+                    }
+                    break;
 
-                $content =  "--".MULTIPART_BOUNDARY.$eol.
-                "Content-Length: ". strlen($filename).$eol.$eol.$file_contents.$eol.
-                "Content-Type: ". mime_content_type($filePath).$eol.$eol.
-                "Content-Disposition: form-data; name=\"".FORM_FIELD."\"; filename=\"".$params['upload_id'].$ext.'"'.$eol;
+                case self::CONTEXT_UPLOAD :
 
-                $context = stream_context_create(
-                    array(
+                    define('MULTIPART_BOUNDARY', '--------------------------'.microtime(true));
+
+                    $header = 'Content-Type: multipart/form-data; boundary='.MULTIPART_BOUNDARY;
+                    // equivalent to <input type="file" name="uploaded_file"/>
+                    define('FORM_FIELD', 'Upload_File');
+
+                    $filename = $params['path']."/".$params['fileName'];
+                    $filepath = DOL_DATA_ROOT."/".$filename;
+                    $file_content_to_upload = file_get_contents($filepath, true);
+
+                    $ext = substr(strrchr($filename, '.'), 0);
+
+                    $content =  "--".MULTIPART_BOUNDARY."\r\n".
+                        "Content-Disposition: form-data; name=\"".FORM_FIELD."\"; filename=\"".$params['upload_id'].$ext."\"\r\n".
+                        "Content-Type: ".mime_content_type($filepath)."\r\n\r\n".
+                        $file_content_to_upload."\r\n";
+
+                    // signal end of request
+                    $content .= "--".MULTIPART_BOUNDARY."--\r\n";
+
+                    $contextStream = stream_context_create(array(
                         'http' => array(
-                                'method' => 'POST',
-                                'header' => $header,
-                                'content' => $content,
+                            'method' => 'POST',
+                            'header' => $header,
+                            'content' => $content,
                         )
                     ));
 
+                    $dataResultUpload = file_get_contents($baseUrl, false, $contextStream);
+                    $xml = simplexml_load_string($dataResultUpload);
 
-             $dataResult = file_get_contents($baseUrl, false, $context);
+                    if (isset($xml->Result) && $xml->Result == 0) {
+                        $result = ['success' => "ok"];
+                        return $result;
+                    } else {
+                        $result = ['success' => "ko", 'Error_Msg' => (string)$xml->Error_Msg];
+                        return $result;
+                    }
+                    // END case self::CONTEXT_UPLOAD
+                    break;
+
+                case self::CONTEXT_POST_UPLOAD :
+
+                    if (isset($xml->Result) && $xml->Result == 0) {
+                        $result = ['success' => "ok"];
+                        return $result;
+                    } else {
+                        $result = ['success' => "ko", 'Error_Msg' => (string)$xml->Error_Msg];
+                        return $result;
+                    }
+                    // END case self::CONTEXT_POST_UPLOAD
+                    break;
             }
 
             if ($dataResult === false) {
                 setEventMessage($langs->trans('ErrorApiCall'),"errors");
                 return 0;
-
-            }else{
-	            // Transforme le $content en un objet xml utilisable
-                $xml = simplexml_load_string($dataResult);
-
-                $this->lastXmlResult = $xml;
-
-                switch($context){
-
-                    case SELF::CONTEXT_SOURCE_ID:
-                        if(isset($xml->Id_Source)){
-                            return (int) $xml->Id_Source;
-                        }else{
-                            return $xml->Result;
-                        }
-
-                    case SELF::CONTEXT_PRE_UPLOAD_VALIDATION:
-
-                        if(isset($xml->Result) && $xml->Result == 0 ){
-                            $result = ['success'=> "ok",'Upload_Id' => (string) $xml->Upload_Id ];
-                            return $result; //46PBolM5XnCThWNzDYUHK7s0k2ZJVfcI
-                        }else{
-                            $result = ['success'=> "ko",'Error_Msg' => (string) $xml->Error_Msg ];
-                            return $result; // upload
-                        }
-
-                    case SELF::CONTEXT_UPLOAD:
-                            var_dump($xml);exit();
-                            //  var_dump("dataResult : " ,$dataResult , $xml);exit;
-                        break;
-                }
             }
 
         }catch(Exception $e) {
@@ -206,7 +200,6 @@ class Isiworkconnector extends SeedObject
                 $e->getCode(), $e->getMessage()),
                 E_USER_ERROR);
         }
-
 
 
     }
@@ -221,7 +214,7 @@ class Isiworkconnector extends SeedObject
         switch($context){
             case self::CONTEXT_SOURCE_ID :
 
-                $baseUrl = $this->baseUrl . SELF::URI_EDIT_END_POINT;
+                $baseUrl = $this->baseUrl ."/". self::URI_EDIT_END_POINT;
                 $baseUrl.= 'Login='.$this->Login
                     .'&CPassword='.$this->Password
                     .'&Url_Client='.$this->urlClient
@@ -234,71 +227,40 @@ class Isiworkconnector extends SeedObject
 
             case self::CONTEXT_PRE_UPLOAD_VALIDATION :
 
-                $baseUrl = $this->baseUrl . SELF::URI_PRE_UPLOAD_END_POINT;
+                $baseUrl = $this->baseUrl ."/". self::URI_PRE_UPLOAD_END_POINT;
                 $baseUrl.= 'Login='.$this->Login
                     .'&CPassword='.$this->Password
                     .'&Url_Client='.$this->urlClient
                     .'&Coll_Id='.$params['Coll_Id']
                     .'&FileName='.$params['fileName']
-                    .'&MD5='. md5(DOL_DATA_ROOT.'/'.$params['path'].'/'.$params['fileName'])
+                    .'&MD5='.md5_file(DOL_DATA_ROOT."/".$params['path']."/".$params['fileName'])
                     .'&Id_Source='.$params['sourceId'];
 
-	            return $baseUrl;
+                return $baseUrl;
 
             case self::CONTEXT_UPLOAD :
 
-                $baseUrl = $this->baseUrl . SELF::URI_UPLOAD_END_POINT;
+                $baseUrl = $this->baseUrl ."/". self::URI_UPLOAD_END_POINT;
                 $baseUrl.= 'Login='.$this->Login
                     .'&CPassword='.$this->Password
                     .'&Url_Client='.$this->urlClient
                     .'&Coll_Id='.$params['Coll_Id'];
 
                 return $baseUrl;
+
+
+            case self::CONTEXT_POST_UPLOAD :
+
+                $baseUrl = $this->baseUrl ."/". self::URI_POST_UPLOAD_END_POINT;
+                $baseUrl.= 'Login='.$this->Login
+                    .'&CPassword='.$this->Password
+                    .'&Url_Client='.$this->urlClient
+                    .'&Coll_Id='.$params['Coll_Id']
+                    .'&Upload_Id='.$params['upload_id'];
+
+                return $baseUrl;
         }
-
-}
-
-    /**
-     *
-     */
-    public function test($credentials,$contextApi,$params){
-
-        $data_json = json_encode($credentials);
-
-
-        $options = [
-            'http' => [
-                'protocol_version' => 1.1,
-                'method' => "POST",
-                'header' => "application/soap+xml",
-                'content' => $data_json,
-                "timeout" => (float) 10.0
-            ],
-            'ssl' => [
-                'allow_self_signed' => true,
-                'verify_peer' => false,
-                'verify_peer_name' => false
-            ]
-        ];
-
-        $context = stream_context_create($options);
-
-        $dataResult = file_get_contents($this->getCustomUri($contextApi,$params) , null);
-        //$this->http_response_header = self::parseHeaders($http_response_header);
-
-       // var_dump($dataResult);exit;
-        if($dataResult) {
-            $dataResponse = json_decode($dataResult);
-            if($dataResponse) {
-                return $dataResponse;
-            }
-
-        }
-
-
 
     }
 
 }
-
-
