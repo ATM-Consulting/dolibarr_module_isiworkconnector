@@ -29,8 +29,7 @@ if (!class_exists('SeedObject'))
 class ZennDocConnector extends Connector
 {
 
-    public $Login;
-    public $Password;
+
     public $urlClient;
     Public $baseUrl;
     public $lastXmlResult;
@@ -52,7 +51,7 @@ class ZennDocConnector extends Connector
      * @param DoliDB $db
      */
     function __construct(DoliDB &$db) {
-        global $conf;
+
         parent::__construct($db);
 
     }

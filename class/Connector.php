@@ -5,6 +5,10 @@
 
 abstract class Connector extends SeedObject {
 
+
+    public $Login;
+    public $Password;
+
     /**
      * ConnectorInterface constructor
      *
