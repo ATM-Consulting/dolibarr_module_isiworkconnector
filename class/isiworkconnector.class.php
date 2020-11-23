@@ -125,7 +125,7 @@ class Isiworkconnector extends SeedObject
     	global $langs;
     	$eol = "\r\n";
         $baseUrl  = $this->getCustomUri($context,$params);
-        var_dump($baseUrl,$context);
+       // var_dump($baseUrl,$context);
         try{
 
             if ($context !=Self::CONTEXT_UPLOAD) {
@@ -133,22 +133,23 @@ class Isiworkconnector extends SeedObject
                 $dataResult = file_get_contents($this->getCustomUri($context, $params), null);
 
             }else{
-                // upload
+                // upload ...
                 define('MULTIPART_BOUNDARY', '--------------------------'.microtime(true));
-                // equivalent to <input type="file" name="uploaded_file"/>
+                $header = 'Content-Type: multipart/form-data; boundary='.MULTIPART_BOUNDARY.$eol;
                 define('FORM_FIELD', 'Upload_File');
 
-                $filename = DOL_DATA_ROOT .'/'. $params['path'].'/'.$params['fileName'];
-                var_dump($filename);
-                $file_contents = file_get_contents($filename);
+                $filePath =     '/'. $params['path'].'/'.$params['fileName'];
+                $filename = DOL_DATA_ROOT .$filePath;
+
+
+                $file_contents = file_get_contents($filename,true);
                 $ext = substr(strrchr($params['fileName'], '.'), 0);
 
-                $header = 'Content-Type: multipart/form-data; boundary='.MULTIPART_BOUNDARY.$eol;
+
                 $content =  "--".MULTIPART_BOUNDARY.$eol.
                 "Content-Length: ". strlen($filename).$eol.$eol.$file_contents.$eol.
-                "Content-Type: ". mime_content_type($filename).$eol.$eol.
+                "Content-Type: ". mime_content_type($filePath).$eol.$eol.
                 "Content-Disposition: form-data; name=\"".FORM_FIELD."\"; filename=\"".$params['upload_id'].$ext.'"'.$eol;
-
 
                 $context = stream_context_create(
                     array(
@@ -159,9 +160,8 @@ class Isiworkconnector extends SeedObject
                         )
                     ));
 
-                var_dump($content);
-                $dataResult = file_get_contents($baseUrl, false, $context);
-                var_dump("dataResult : " ,$dataResult);exit;
+
+             $dataResult = file_get_contents($baseUrl, false, $context);
             }
 
             if ($dataResult === false) {
@@ -171,6 +171,7 @@ class Isiworkconnector extends SeedObject
             }else{
 	            // Transforme le $content en un objet xml utilisable
                 $xml = simplexml_load_string($dataResult);
+
                 $this->lastXmlResult = $xml;
 
                 switch($context){
@@ -193,7 +194,8 @@ class Isiworkconnector extends SeedObject
                         }
 
                     case SELF::CONTEXT_UPLOAD:
-                       // var_dump($dataResult);exit;
+                            var_dump($xml);exit();
+                            //  var_dump("dataResult : " ,$dataResult , $xml);exit;
                         break;
                 }
             }
@@ -238,7 +240,7 @@ class Isiworkconnector extends SeedObject
                     .'&Url_Client='.$this->urlClient
                     .'&Coll_Id='.$params['Coll_Id']
                     .'&FileName='.$params['fileName']
-                    .'&MD5='.$params['md5FileName']
+                    .'&MD5='. md5(DOL_DATA_ROOT.'/'.$params['path'].'/'.$params['fileName'])
                     .'&Id_Source='.$params['sourceId'];
 
 	            return $baseUrl;
