@@ -75,7 +75,13 @@ class ZennDocConnector extends Connector
     public function checkConnection(){
         // -1   /    >  0 SourceId
 
+        /**
+         * il n'y a pas d'autr emoyen de savoir si les login / password sont correct que de tenter de récuperer
+         * une sourceId
+         * dans le cas d'une problême la fonction renvoie -1 sinon un int signed
+         */
         $params = array();
+        //@TODO PLACE COLL_id et nomSource en conf
         $params['Coll_Id'] ='coll_1';
         $params['Titre'] = 'Nomsource';
         $result = $this->sendQuery(self::CONTEXT_SOURCE_ID, $params);
