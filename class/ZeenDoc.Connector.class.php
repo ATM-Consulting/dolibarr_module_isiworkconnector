@@ -26,9 +26,8 @@ if (!class_exists('SeedObject'))
 }
 
 
-class ZennDocConnector extends Connector
+class ZeenDocConnector extends Connector
 {
-
 
     public $urlClient;
     Public $baseUrl;
