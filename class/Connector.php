@@ -3,7 +3,7 @@
 
 
 
-abstract class ConnectorInterface extends SeedObject {
+abstract class Connector extends SeedObject {
 
     /**
      * ConnectorInterface constructor

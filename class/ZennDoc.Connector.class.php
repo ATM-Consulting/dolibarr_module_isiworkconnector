@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-require_once __DIR__.'/Connector.int.php';
+require_once __DIR__.'/Connector.php';
 
 if (!class_exists('SeedObject'))
 {
@@ -26,7 +26,7 @@ if (!class_exists('SeedObject'))
 }
 
 
-class Isiworkconnector extends ConnectorInterface
+class ZennDocConnector extends Connector
 {
 
     public $Login;
@@ -225,7 +225,6 @@ class Isiworkconnector extends ConnectorInterface
 
                 return $baseUrl;
 
-
             case self::CONTEXT_PRE_UPLOAD_VALIDATION :
 
                 $baseUrl = $this->baseUrl ."/". self::URI_PRE_UPLOAD_END_POINT;
@@ -263,5 +262,7 @@ class Isiworkconnector extends ConnectorInterface
         }
 
     }
+
+
 
 }
