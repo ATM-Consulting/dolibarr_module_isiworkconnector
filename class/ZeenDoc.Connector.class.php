@@ -32,6 +32,7 @@ class ZeenDocConnector extends Connector
     public $urlClient;
     Public $baseUrl;
     public $lastXmlResult;
+    public $classeur;
 
     const  URI_EDIT_END_POINT = "Edit_Source.php?";
     const  URI_PRE_UPLOAD_END_POINT = "Pre_Upload.php?";
@@ -49,10 +50,10 @@ class ZeenDocConnector extends Connector
      *
      * @param DoliDB $db
      */
-    function __construct(DoliDB &$db) {
+    function __construct(DoliDB &$db, $accountCredentials) {
 
         parent::__construct($db);
-
+        $this->setCredentials($accountCredentials);
     }
 
     /**
@@ -67,6 +68,7 @@ class ZeenDocConnector extends Connector
         $this->Password     = $accountCredentials->password;
         $this->urlClient    = $accountCredentials->urlclient;
         $this->baseUrl      = $accountCredentials->baseUrl;
+        $this->classeur     = $accountCredentials->classeur;
     }
 
     /**
