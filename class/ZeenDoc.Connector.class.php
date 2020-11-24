@@ -29,7 +29,6 @@ if (!class_exists('SeedObject'))
 class ZeenDocConnector extends Connector
 {
 
-
     public $urlClient;
     Public $baseUrl;
     public $lastXmlResult;
@@ -239,6 +238,12 @@ class ZeenDocConnector extends Connector
                     .'&FileName='.$params['fileName']
                     .'&MD5='.md5_file(DOL_DATA_ROOT."/".$params['path']."/".$params['fileName'])
                     .'&Id_Source='.$params['sourceId'];
+
+                if(!empty($params['CustomClassement'])) {
+	                foreach ($params['CustomClassement'] as $key => $custom) {
+		                $baseUrl .= '&'.$key.'='.$custom;
+                	}
+                }
 
                 return $baseUrl;
 
