@@ -240,6 +240,12 @@ class ZeenDocConnector extends Connector
                     .'&MD5='.md5_file(DOL_DATA_ROOT."/".$params['path']."/".$params['fileName'])
                     .'&Id_Source='.$params['sourceId'];
 
+                if(!empty($params['CustomClassement'])) {
+	                foreach ($params['CustomClassement'] as $key => $custom) {
+		                $baseUrl .= '&'.$key.'='.$custom;
+                	}
+                }
+
                 return $baseUrl;
 
             case self::CONTEXT_UPLOAD :
