@@ -39,6 +39,11 @@ class ZeenDocConnector extends Connector
     const  URI_UPLOAD_END_POINT = "Upload.php?";
     const  URI_POST_UPLOAD_END_POINT = "Post_Upload.php?";
 
+	const  ZEENDOC_STATUS_FILE_DELETED   = -1;
+	const  ZEENDOC_STATUS_FILE_INDEXED   = 1;
+    const  ZEENDOC_STATUS_FILE_TO_INDEX  = 2;
+    const  ZEENDOC_STATUS_FILE_PROTECTED = 3;
+
     const  CONTEXT_SOURCE_ID  = 1;
     const  CONTEXT_PRE_UPLOAD_VALIDATION  = 2;
     const  CONTEXT_UPLOAD  = 3;
