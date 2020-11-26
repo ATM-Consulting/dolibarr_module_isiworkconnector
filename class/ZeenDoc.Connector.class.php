@@ -113,9 +113,10 @@ class ZeenDocConnector extends Connector
 
 		global $langs;
 		// Construit l'url correcte selon le contexte donné en paramètre
-		$baseUrl  = $this->getCustomUri($context,$params);
+		$baseUrl = $this->getCustomUri($context,$params);
 
 		$dataResult = file_get_contents($baseUrl, false);
+
 		// Transforme le $dataResult en un objet xml utilisable
 		$xml = simplexml_load_string($dataResult);
 		// Pour afficher les erreurs eventuelles depuis le cron
@@ -126,6 +127,7 @@ class ZeenDocConnector extends Connector
 			switch ($context) {
 
 				case self::CONTEXT_SOURCE_ID :
+
 					if (isset($xml->Id_Source)) {
 						return (int)$xml->Id_Source;
 					} else {
@@ -152,7 +154,7 @@ class ZeenDocConnector extends Connector
 					// equivalent to <input type="file" name="uploaded_file"/>
 					define('FORM_FIELD', 'Upload_File');
 
-					$filename = $params['path']."/".$params['fileName'];
+					$filename = $params['path']."/".urldecode($params['fileName']);
 					$filepath = DOL_DATA_ROOT."/".$filename;
 					$file_content_to_upload = file_get_contents($filepath, true);
 
@@ -243,7 +245,7 @@ class ZeenDocConnector extends Connector
 					.'&Url_Client='.$this->urlClient
 					.'&Coll_Id='.$params['Coll_Id']
 					.'&FileName='.$params['fileName']
-					.'&MD5='.md5_file(DOL_DATA_ROOT."/".$params['path']."/".$params['fileName'])
+					.'&MD5='.md5_file(DOL_DATA_ROOT."/".$params['path']."/".urldecode($params['fileName']))
 					.'&Id_Source='.$params['sourceId'];
 
 				if(!empty($params['CustomClassement'])) {
