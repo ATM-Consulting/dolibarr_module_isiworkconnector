@@ -76,23 +76,6 @@ class ZeenDocConnector extends Connector
 		$this->classeur     = $accountCredentials->classeur;
 	}
 
-	/**
-	 */
-	public function checkConnection(){
-		// -1   /    >  0 SourceId
-
-		/**
-		 * il n'y a pas d'autr emoyen de savoir si les login / password sont correct que de tenter de récuperer
-		 * une sourceId
-		 * dans le cas d'une problême la fonction renvoie -1 sinon un int signed
-		 */
-		$params = array();
-		//@TODO PLACE COLL_id et nomSource en conf
-		$params['Coll_Id'] ='coll_1';
-		$params['Titre'] = 'Nomsource';
-		$result = $this->sendQuery(self::CONTEXT_SOURCE_ID, $params);
-		return $result == -1 ? 0 : 1 ;
-	}
 
 	/**
 	 * @return mixed
@@ -122,98 +105,87 @@ class ZeenDocConnector extends Connector
 		// Pour afficher les erreurs eventuelles depuis le cron
 		$this->lastXmlResult = $xml;
 
-		try {
+		switch ($context) {
 
-			switch ($context) {
+			case self::CONTEXT_SOURCE_ID :
 
-				case self::CONTEXT_SOURCE_ID :
+				if (isset($xml->Id_Source)) {
+					return (int)$xml->Id_Source;
+				} else {
+					return $xml->Result;
+				}
+				break;
 
-					if (isset($xml->Id_Source)) {
-						return (int)$xml->Id_Source;
-					} else {
-						return $xml->Result;
-					}
-					break;
+			case self::CONTEXT_PRE_UPLOAD_VALIDATION :
 
-				case self::CONTEXT_PRE_UPLOAD_VALIDATION :
+				if (isset($xml->Result) && $xml->Result == 0) {
+					$result = ['success' => "ok", 'Upload_Id' => (string)$xml->Upload_Id];
+					return $result;
+				} else {
+					$result = ['success' => "ko", 'Error_Msg' => (string)$xml->Error_Msg];
+					return $result;
+				}
+				break;
 
-					if (isset($xml->Result) && $xml->Result == 0) {
-						$result = ['success' => "ok", 'Upload_Id' => (string)$xml->Upload_Id];
-						return $result;
-					} else {
-						$result = ['success' => "ko", 'Error_Msg' => (string)$xml->Error_Msg];
-						return $result;
-					}
-					break;
+			case self::CONTEXT_UPLOAD :
 
-				case self::CONTEXT_UPLOAD :
 
-					define('MULTIPART_BOUNDARY', '--------------------------'.microtime(true));
+				define('MULTIPART_BOUNDARY', '--------------------------'.microtime(true));
 
-					$header = 'Content-Type: multipart/form-data; boundary='.MULTIPART_BOUNDARY;
-					// equivalent to <input type="file" name="uploaded_file"/>
-					define('FORM_FIELD', 'Upload_File');
+				$header = 'Content-Type: multipart/form-data; boundary='.MULTIPART_BOUNDARY;
+				// equivalent to <input type="file" name="uploaded_file"/>
+				define('FORM_FIELD', 'Upload_File');
 
-					$filename = $params['path']."/".urldecode($params['fileName']);
-					$filepath = DOL_DATA_ROOT."/".$filename;
-					$file_content_to_upload = file_get_contents($filepath, true);
+				$filename = $params['path']."/".urldecode($params['fileName']);
+				$filepath = DOL_DATA_ROOT."/".$filename;
+				$file_content_to_upload = file_get_contents($filepath, true);
 
-					$ext = substr(strrchr($filename, '.'), 0);
+				$ext = substr(strrchr($filename, '.'), 0);
 
-					$content =  "--".MULTIPART_BOUNDARY."\r\n".
-						"Content-Disposition: form-data; name=\"".FORM_FIELD."\"; filename=\"".$params['upload_id'].$ext."\"\r\n".
-						"Content-Type: ".mime_content_type($filepath)."\r\n\r\n".
-						$file_content_to_upload."\r\n";
+				$content =  "--".MULTIPART_BOUNDARY."\r\n".
+					"Content-Disposition: form-data; name=\"".FORM_FIELD."\"; filename=\"".$params['upload_id'].$ext."\"\r\n".
+					"Content-Type: ".mime_content_type($filepath)."\r\n\r\n".
+					$file_content_to_upload."\r\n";
 
-					// signal end of request
-					$content .= "--".MULTIPART_BOUNDARY."--\r\n";
+				// signal end of request
+				$content .= "--".MULTIPART_BOUNDARY."--\r\n";
 
-					$contextStream = stream_context_create(array(
-						'http' => array(
-							'method' => 'POST',
-							'header' => $header,
-							'content' => $content,
-						)
-					));
+				$contextStream = stream_context_create(array(
+					'http' => array(
+						'method' => 'POST',
+						'header' => $header,
+						'content' => $content,
+					)
+				));
 
-					$dataResultUpload = file_get_contents($baseUrl, false, $contextStream);
-					$xml = simplexml_load_string($dataResultUpload);
+				$dataResultUpload = file_get_contents($baseUrl, false, $contextStream);
+				$xml = simplexml_load_string($dataResultUpload);
 
-					if (isset($xml->Result) && $xml->Result == 0) {
-						$result = ['success' => "ok"];
-						return $result;
-					} else {
-						$result = ['success' => "ko", 'Error_Msg' => (string)$xml->Error_Msg];
-						return $result;
-					}
-					// END case self::CONTEXT_UPLOAD
-					break;
+				if (isset($xml->Result) && $xml->Result == 0) {
+					$result = ['success' => "ok"];
+					return $result;
+				} else {
+					$result = ['success' => "ko", 'Error_Msg' => (string)$xml->Error_Msg];
+					return $result;
+				}
+				// END case self::CONTEXT_UPLOAD
+				break;
 
-				case self::CONTEXT_POST_UPLOAD :
+			case self::CONTEXT_POST_UPLOAD :
 
-					if (isset($xml->Result) && $xml->Result == 0) {
-						$result = ['success' => "ok"];
-						return $result;
-					} else {
-						$result = ['success' => "ko", 'Error_Msg' => (string)$xml->Error_Msg];
-						return $result;
-					}
-					// END case self::CONTEXT_POST_UPLOAD
-					break;
-			}
-
-			if ($dataResult === false) {
-				setEventMessage($langs->trans('ErrorApiCall'),"errors");
-				return 0;
-			}
-
-		}catch(Exception $e) {
-			trigger_error(sprintf(
-				'call Api failed with error #%d: %s',
-				$e->getCode(), $e->getMessage()),
-				E_USER_ERROR);
+				if (isset($xml->Result) && $xml->Result == 0) {
+					$result = ['success' => "ok"];
+					return $result;
+				} else {
+					$result = ['success' => "ko", 'Error_Msg' => (string)$xml->Error_Msg];
+					return $result;
+				}
+				break;
 		}
 
+		if ($dataResult === false) {
+			return 0;
+		}
 
 	}
 
