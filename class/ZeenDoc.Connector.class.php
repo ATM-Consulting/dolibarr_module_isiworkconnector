@@ -33,6 +33,7 @@ class ZeenDocConnector extends Connector
 	Public $baseUrl;
 	public $lastXmlResult;
 	public $classeur;
+	public $idsource;
 
 	const  URI_EDIT_END_POINT = "Edit_Source.php?";
 	const  URI_PRE_UPLOAD_END_POINT = "Pre_Upload.php?";
@@ -74,6 +75,7 @@ class ZeenDocConnector extends Connector
 		$this->urlClient    = $accountCredentials->urlclient;
 		$this->baseUrl      = $accountCredentials->baseUrl;
 		$this->classeur     = $accountCredentials->classeur;
+		$this->idsource     = $accountCredentials->idsource;
 	}
 
 
@@ -97,8 +99,13 @@ class ZeenDocConnector extends Connector
 		global $langs;
 		// Construit l'url correcte selon le contexte donné en paramètre
 		$baseUrl = $this->getCustomUri($context,$params);
-
-		$dataResult = file_get_contents($baseUrl, false);
+		// Dans le cas d'un upload,la fonction file_get_contents prend un param supplémentaire (le contextStream)
+		// On prépare celui-ci dans la fonction contextStreamForUpload
+		if($context == self::CONTEXT_UPLOAD){
+			$dataResult = file_get_contents($baseUrl, false, $this->contextStreamForUpload($params));
+		} else {
+			$dataResult = file_get_contents($baseUrl, false);
+		}
 
 		// Transforme le $dataResult en un objet xml utilisable
 		$xml = simplexml_load_string($dataResult);
@@ -106,15 +113,6 @@ class ZeenDocConnector extends Connector
 		$this->lastXmlResult = $xml;
 
 		switch ($context) {
-
-			case self::CONTEXT_SOURCE_ID :
-
-				if (isset($xml->Id_Source)) {
-					return (int)$xml->Id_Source;
-				} else {
-					return $xml->Result;
-				}
-				break;
 
 			case self::CONTEXT_PRE_UPLOAD_VALIDATION :
 
@@ -129,38 +127,6 @@ class ZeenDocConnector extends Connector
 
 			case self::CONTEXT_UPLOAD :
 
-
-				define('MULTIPART_BOUNDARY', '--------------------------'.microtime(true));
-
-				$header = 'Content-Type: multipart/form-data; boundary='.MULTIPART_BOUNDARY;
-				// equivalent to <input type="file" name="uploaded_file"/>
-				define('FORM_FIELD', 'Upload_File');
-
-				$filename = $params['path']."/".urldecode($params['fileName']);
-				$filepath = DOL_DATA_ROOT."/".$filename;
-				$file_content_to_upload = file_get_contents($filepath, true);
-
-				$ext = substr(strrchr($filename, '.'), 0);
-
-				$content =  "--".MULTIPART_BOUNDARY."\r\n".
-					"Content-Disposition: form-data; name=\"".FORM_FIELD."\"; filename=\"".$params['upload_id'].$ext."\"\r\n".
-					"Content-Type: ".mime_content_type($filepath)."\r\n\r\n".
-					$file_content_to_upload."\r\n";
-
-				// signal end of request
-				$content .= "--".MULTIPART_BOUNDARY."--\r\n";
-
-				$contextStream = stream_context_create(array(
-					'http' => array(
-						'method' => 'POST',
-						'header' => $header,
-						'content' => $content,
-					)
-				));
-
-				$dataResultUpload = file_get_contents($baseUrl, false, $contextStream);
-				$xml = simplexml_load_string($dataResultUpload);
-
 				if (isset($xml->Result) && $xml->Result == 0) {
 					$result = ['success' => "ok"];
 					return $result;
@@ -168,7 +134,6 @@ class ZeenDocConnector extends Connector
 					$result = ['success' => "ko", 'Error_Msg' => (string)$xml->Error_Msg];
 					return $result;
 				}
-				// END case self::CONTEXT_UPLOAD
 				break;
 
 			case self::CONTEXT_POST_UPLOAD :
@@ -197,17 +162,6 @@ class ZeenDocConnector extends Connector
 	public function getCustomUri($context,$params){
 		$baseUrl = "";
 		switch($context){
-			case self::CONTEXT_SOURCE_ID :
-
-				$baseUrl = $this->baseUrl ."/". self::URI_EDIT_END_POINT;
-				$baseUrl.= 'Login='.$this->Login
-					.'&CPassword='.$this->Password
-					.'&Url_Client='.$this->urlClient
-					.'&Coll_Id='.$params['Coll_Id']
-					.'&Titre='.$params['Titre']
-					.'&Id_Type_Source=5';
-
-				return $baseUrl;
 
 			case self::CONTEXT_PRE_UPLOAD_VALIDATION :
 
@@ -251,6 +205,44 @@ class ZeenDocConnector extends Connector
 				return $baseUrl;
 		}
 
+	}
+
+	/**
+	 * To prepare the file that will be uploaded
+	 * @param mixed $params
+	 * @return resource $contextStream
+	 */
+	public function contextStreamForUpload($params){
+
+		define('MULTIPART_BOUNDARY', '--------------------------'.microtime(true));
+
+		$header = 'Content-Type: multipart/form-data; boundary='.MULTIPART_BOUNDARY;
+		// equivalent to <input type="file" name="uploaded_file"/>
+		define('FORM_FIELD', 'Upload_File');
+
+		$filename = $params['path']."/".urldecode($params['fileName']);
+		$filepath = DOL_DATA_ROOT."/".$filename;
+		$file_content_to_upload = file_get_contents($filepath, true);
+
+		$ext = substr(strrchr($filename, '.'), 0);
+
+		$content =  "--".MULTIPART_BOUNDARY."\r\n".
+			"Content-Disposition: form-data; name=\"".FORM_FIELD."\"; filename=\"".$params['upload_id'].$ext."\"\r\n".
+			"Content-Type: ".mime_content_type($filepath)."\r\n\r\n".
+			$file_content_to_upload."\r\n";
+
+		// signal end of request
+		$content .= "--".MULTIPART_BOUNDARY."--\r\n";
+
+		$contextStream = stream_context_create(array(
+			'http' => array(
+				'method' => 'POST',
+				'header' => $header,
+				'content' => $content,
+			)
+		));
+
+		return $contextStream;
 	}
 
 
