@@ -44,7 +44,7 @@ class modisiworkconnector extends DolibarrModules
 
 		$this->editor_name = 'ATM-Consulting';
 		$this->editor_url = 'https://www.atm-consulting.fr';
-		
+
 		// Id for module (must be unique).
 		// Use here a free id (See in Home -> System information -> Dolibarr for list of used modules id).
 		$this->numero = 104654; // 104000 to 104999 for ATM CONSULTING
@@ -59,7 +59,7 @@ class modisiworkconnector extends DolibarrModules
 		// Module description, used if translation string 'ModuleXXXDesc' not found (where XXX is value of numeric property 'numero' of module)
 		$this->description = "Description of module isiworkconnector";
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '1.0.0';
+		$this->version = '1.1.0';
 		// Key used in llx_const table to save module status enabled/disabled (where ISIWORKCONNECTOR is value of property name of module in uppercase)
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		// Where to store the module in setup page (0=common,1=interface,2=others,3=very specific)
@@ -68,7 +68,7 @@ class modisiworkconnector extends DolibarrModules
 		// If file is in theme/yourtheme/img directory under name object_pictovalue.png, use this->picto='pictovalue'
 		// If file is in module/img directory under name object_pictovalue.png, use this->picto='pictovalue@module'
 		$this->picto='isiworkconnector@isiworkconnector';
-		
+
 		// Defined all module parts (triggers, login, substitutions, menus, css, etc...)
 		// for default path (eg: /isiworkconnector/core/xxxxx) (0=disable, 1=enable)
 		// for specific path of parts (eg: /isiworkconnector/core/modules/barcode)
@@ -187,7 +187,7 @@ class modisiworkconnector extends DolibarrModules
 		$this->rights[$r][4] = 'read';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$r++;
-		
+
 		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
 		$this->rights[$r][1] = 'isiworkconnector_write';	// Permission label
 		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
@@ -238,7 +238,7 @@ class modisiworkconnector extends DolibarrModules
 		//							'target'=>'',
 		//							'user'=>2);				                // 0=Menu for internal users, 1=external users, 2=both
 		// $r++;
-		
+
 /*
 		$this->menu[$r]=array(
 			'fk_menu'=>0,			                // Put 0 if this is a top menu
@@ -305,7 +305,7 @@ class modisiworkconnector extends DolibarrModules
 		);				                // 0=Menu for internal users, 1=external users, 2=both
 		$r++;
 */
-		
+
 		// Exports
 		$r=1;
 
@@ -335,7 +335,7 @@ class modisiworkconnector extends DolibarrModules
 	public function init($options = '')
 	{
 		$sql = array();
-		
+
 		define('INC_FROM_DOLIBARR', true);
 
 		require dol_buildpath('/isiworkconnector/script/create-maj-base.php');
