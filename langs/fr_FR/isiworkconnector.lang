@@ -52,3 +52,13 @@ ConfirmValidateisiworkconnectorBody=Souhaitez-vous vraiment activer cette fiche 
 
 ConfirmDeleteisiworkconnectorTitle=Confirmation de suppression
 ConfirmDeleteisiworkconnectorBody=Souhaitez-vous vraiment supprimer cette fiche isiworkconnector %s ?
+
+# ZEENDOC
+FINANCEMENT_URL_ZEENDOC_LOGIN=Login
+FINANCEMENT_URL_ZEENDOC_PASSWORD =Mot de passe
+FINANCEMENT_URL_ZEENDOC_URLCLIENT =Url du client
+FINANCEMENT_URL_ZEENDOC_SERVICE_URL_BASE =Url du service ZeenDoc
+FINANCEMENT_URL_ZEENDOC_CLASSEUR = Nom du classeur
+FINANCEMENT_URL_ZEENDOC_IDSOURCE = Id de la source de documents
+ZeenDocSendParameters= Paramètres d'envoi de documents vers ZeenDoc
+ZeenDocSearchParameters= Paramètres de recherche de documents depuis ZeenDoc
