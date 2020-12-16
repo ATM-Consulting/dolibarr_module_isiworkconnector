@@ -59,7 +59,7 @@ if (preg_match('/set_(.*)/', $action, $reg))
 		dol_print_error($db);
 	}
 }
-	
+
 if (preg_match('/del_(.*)/', $action, $reg))
 {
 	$code=$reg[1];
@@ -123,6 +123,32 @@ setup_print_input_form_part('CONSTNAME', $langs->trans('ParamLabel'), 'ParamDesc
 // Example with textarea
 //setup_print_input_form_part('CONSTNAME',$langs->trans('ParamLabel'),'ParamDesc',array(),'textarea');
 
+print '</table>';
+
+
+//-------------------------------------------------------------------------------
+print '<br />';
+print load_fiche_titre('ZEENDOC', '', '');
+print '<table class="noborder" width="100%">';
+setup_print_title($langs->trans('ZeenDocSendParameters'));
+
+$params = ['type'=>'text', 'placeholder' => 'login'];
+setup_print_input_form_part('FINANCEMENT_URL_ZEENDOC_LOGIN', $langs->trans('FINANCEMENT_URL_ZEENDOC_LOGIN'), '', $params, 'input');
+
+$params = ['type'=>'password', 'placeholder' => '*******'];
+setup_print_input_form_part('FINANCEMENT_URL_ZEENDOC_PASSWORD', $langs->trans('FINANCEMENT_URL_ZEENDOC_PASSWORD'), '', $params, 'input');
+
+$params = ['type'=>'text', 'placeholder' => ''];
+setup_print_input_form_part('FINANCEMENT_URL_ZEENDOC_URLCLIENT', $langs->trans('FINANCEMENT_URL_ZEENDOC_URLCLIENT'), '', $params, 'input');
+
+$params = ['type'=>'url', 'placeholder' => 'https://armoires.Zeendoc.com/_WebServices/Upload/0_3'];
+setup_print_input_form_part('FINANCEMENT_URL_ZEENDOC_SERVICE_URL_BASE', $langs->trans('FINANCEMENT_URL_ZEENDOC_SERVICE_URL_BASE'), '', $params, 'input');
+
+$params = ['type'=>'text', 'placeholder' => "nom du classeur"];
+setup_print_input_form_part('FINANCEMENT_URL_ZEENDOC_CLASSEUR', $langs->trans('FINANCEMENT_URL_ZEENDOC_CLASSEUR'), '', $params, 'input');
+
+$params = ['type'=>'text', 'placeholder' => "Source de documents"];
+setup_print_input_form_part('FINANCEMENT_URL_ZEENDOC_IDSOURCE', $langs->trans('FINANCEMENT_URL_ZEENDOC_IDSOURCE'), '', $params, 'input');
 
 print '</table>';
 
