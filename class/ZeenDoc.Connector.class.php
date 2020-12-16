@@ -304,16 +304,8 @@ class ZeenDocConnector extends Connector
 		// Si nous avons une Connexion
 		if ($rights->Result == 0) {
 
-			$ext = substr(strrchr($alreadySentFile->filename, '.'), 0);
 			$complextTypeIndex1 = [
 				"Id"       => 1,
-				"Label"    => 'Filename',
-				"Value"    => basename($alreadySentFile->filename, $ext),
-				"Operator" => 'EQUALS',
-			];
-
-			$complextTypeIndex2 = [
-				"Id"       => 2,
 				"Label"    => 'Upload_Id',
 				"Value"    =>  $alreadySentFile->upload_id_zeendoc,
 				"Operator" => 'EQUALS',
@@ -322,8 +314,7 @@ class ZeenDocConnector extends Connector
 			$IndexListAsSoapVarObject = new SoapVar
 			(
 				array(
-					new SoapVar($complextTypeIndex1, SOAP_ENC_OBJECT,'IndexDefinition', null, 'Index'),
-					new SoapVar($complextTypeIndex2, SOAP_ENC_OBJECT,'IndexDefinition', null, 'Index'),
+					new SoapVar($complextTypeIndex1, SOAP_ENC_OBJECT,'IndexDefinition', null, 'Index')
 				)
 				,
 				SOAP_ENC_OBJECT,
