@@ -1,40 +1,33 @@
 <?php
 
-
-
-
 abstract class Connector extends SeedObject {
+	public $login;
+	public $password;
 
+    /**
+     * ConnectorInterface constructor
+     *
+     * @param DoliDB $db
+     */
+    public function __construct(DoliDB &$db) { parent::__construct($db); }
 
-	public $Login;
-	public $Password;
+    /**
+     * @param stdClass $accountCredentials
+     * @return mixed
+     */
+    abstract public function setCredentials($accountCredentials);
 
-	/**
-	 * ConnectorInterface constructor
-	 *
-	 */
-	public function __construct(&$db){
+    /**
+     * @param int   $context
+     * @param mixed $params
+     * @return mixed
+     */
+    abstract public function sendQuery($context, $params);
 
-		parent::__construct($db);
-
-	}
-
-	/**
-	 * Function that need to be override by children
-	 */
-	abstract public function setCredentials($accountCredentials);
-
-	/**
-	 * Function that need to be override by children
-	 */
-	abstract public function sendQuery($context,$params);
-
-	/**
-	 * Function that need to be override by children
-	 */
-	abstract function getCustomUri($context,$params);
-
-
-
-
+    /**
+     * @param int   $context
+     * @param mixed $params
+     * @return mixed
+     */
+    abstract function getCustomUri($context, $params);
 }
