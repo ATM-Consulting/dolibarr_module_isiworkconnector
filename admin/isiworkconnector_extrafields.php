@@ -30,20 +30,20 @@ if (! $res) {
 /*
  * Config of extrafield page for isiworkconnector
  */
-require_once '../lib/isiworkconnector.lib.php';
-require_once '../class/isiworkconnector.class.php';
-$langs->loadLangs(array('isiworkconnector@isiworkconnector', 'admin', 'other'));
-
-$isiworkconnector = new isiworkconnector($db);
-$elementtype=$isiworkconnector->table_element;  //Must be the $table_element of the class that manage extrafield
+//require_once '../lib/isiworkconnector.lib.php';
+//require_once '../class/isiworkconnector.class.php';
+//$langs->loadLangs(array('isiworkconnector@isiworkconnector', 'admin', 'other'));
+//
+//$isiworkconnector = new isiworkconnector($db);
+//$elementtype=$isiworkconnector->table_element;  //Must be the $table_element of the class that manage extrafield
 
 // Page title and texts elements
-$textobject=$langs->transnoentitiesnoconv('isiworkconnector');
-$help_url='EN:Help isiworkconnector|FR:Aide isiworkconnector';
-$pageTitle = $langs->trans('isiworkconnectorExtrafieldPage');
+//$textobject=$langs->transnoentitiesnoconv('isiworkconnector');
+//$help_url='EN:Help isiworkconnector|FR:Aide isiworkconnector';
+//$pageTitle = $langs->trans('isiworkconnectorExtrafieldPage');
 
 // Configuration header
-$head = isiworkconnectorAdminPrepareHead();
+//$head = isiworkconnectorAdminPrepareHead();
 
 
 
@@ -51,4 +51,4 @@ $head = isiworkconnectorAdminPrepareHead();
  *  Include of extrafield page
  */
 
-require_once dol_buildpath('abricot/tpl/extrafields_setup.tpl.php'); // use this kind of call for variables scope
+//require_once dol_buildpath('abricot/tpl/extrafields_setup.tpl.php'); // use this kind of call for variables scope
