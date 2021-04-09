@@ -28,6 +28,8 @@ if (!class_exists('SeedObject'))
 
 
 class ZeenDocConnector extends Connector {
+    public const LOG_SUFFIX = '_zeendoc_connector';
+
     public $urlClient;
     public $baseUrl;
     public $lastXmlResult;
@@ -78,7 +80,7 @@ class ZeenDocConnector extends Connector {
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getLastXmlErrorMsg() {
         if(isset($this->lastXmlResult)) {
@@ -178,12 +180,15 @@ class ZeenDocConnector extends Connector {
             }
 
             if($dataResult === false) {
+                parent::logMeThis(get_class($this).'::sendQuery() : '.$langs->trans('ErrorApiCall'));
                 setEventMessage($langs->trans('ErrorApiCall'), 'errors');
                 return 0;
             }
         }
         catch(Exception $e) {
-            trigger_error(sprintf('call Api failed with error #%d: %s', $e->getCode(), $e->getMessage()), E_USER_ERROR);
+            $msg = sprintf('call Api failed with error #%d: %s', $e->getCode(), $e->getMessage());
+            parent::logMeThis(get_class($this).'::sendQuery() : '.$msg);
+            trigger_error($msg, E_USER_ERROR);
         }
 
         return -1;
@@ -243,8 +248,8 @@ class ZeenDocConnector extends Connector {
     }
 
     /**
-     * @param string $alreadySentFile
-     * @return array|bool|mixed|object
+     * @param stdClass $alreadySentFile
+     * @return mixed
      * @throws SoapFault
      */
     public function fetchfile($alreadySentFile) {
@@ -253,7 +258,7 @@ class ZeenDocConnector extends Connector {
         // Soap Call Preparation
         $wsdl = 'https://armoires.zeendoc.com/'.$this->urlClient.'/ws/1_0/wsdl.php?WSDL';
 
-		$client = new SoapClient($wsdl);
+        $client = new SoapClient($wsdl);
 
         // On transforme le retour SOAP en objet
         $rights = json_decode($client->__soapCall('getRights', [
@@ -289,13 +294,14 @@ class ZeenDocConnector extends Connector {
                 ]));
         }
         else {
-            $this->output .= $langs->trans("WrongCredentialsZeendoc");
+            parent::logMeThis(get_class($this).'::fetchfile() : '.$langs->trans('WrongCredentialsZeendoc'));
+            $this->output .= $langs->trans('WrongCredentialsZeendoc');
             $this->errors++;
         }
     }
 
     /**
-     * @param string $fileToSend
+     * @param stdClass $fileToSend
      * @return mixed|SimpleXMLElement|string
      */
     public function send($fileToSend) {
@@ -329,12 +335,14 @@ class ZeenDocConnector extends Connector {
             else {
                 // errors upload
                 $this->output .= $this->getLastXmlErrorMsg();
+                parent::logMeThis(get_class($this).'::send() upload errors : '.$this->output);
                 $this->errors++;
             }
         }
         else {
             // errors pre-upload
             $this->output = $this->getLastXmlErrorMsg();
+            parent::logMeThis(get_class($this).'::send() pre-upload errors : '.$this->output);
             $this->errors++;
         }
     }
