@@ -28,7 +28,8 @@ if (!class_exists('SeedObject'))
 
 
 class ZeenDocConnector extends Connector {
-    public const LOG_SUFFIX = '_zeendoc_connector';
+    public const LOG_SUFFIX_SEARCH = '_zeendoc_search';
+    public const LOG_SUFFIX_SEND = '_zeendoc_send';
 
     public $urlClient;
     public $baseUrl;
@@ -71,7 +72,7 @@ class ZeenDocConnector extends Connector {
      * @param stdClass $accountCredentials
      */
     public function setCredentials($accountCredentials) {
-        parent::logMeThis('Call to method '.get_class($this).'::setCredentials()', LOG_INFO);
+//        parent::logMeThis('Call to method '.get_class($this).'::setCredentials()', LOG_INFO);
 
         $this->login = $accountCredentials->login;
         $this->password = $accountCredentials->password;
@@ -100,7 +101,7 @@ class ZeenDocConnector extends Connector {
     public function sendQuery($context, $params) {
         global $langs;
 
-        parent::logMeThis('Call to method '.get_class($this).'::sendQuery()', LOG_INFO);
+        parent::logMeThis('Call to method '.get_class($this).'::sendQuery()', self::LOG_SUFFIX_SEND, LOG_INFO);
 
         // Construit l'url correcte selon le contexte donné en paramètre
         $baseUrl = $this->getCustomUri($context, $params);
@@ -184,14 +185,14 @@ class ZeenDocConnector extends Connector {
             }
 
             if($dataResult === false) {
-                parent::logMeThis(get_class($this).'::sendQuery() : '.$langs->trans('ErrorApiCall'));
+                parent::logMeThis(get_class($this).'::sendQuery() : '.$langs->trans('ErrorApiCall'), self::LOG_SUFFIX_SEND);
                 setEventMessage($langs->trans('ErrorApiCall'), 'errors');
                 return 0;
             }
         }
         catch(Exception $e) {
             $msg = sprintf('call Api failed with error #%d: %s', $e->getCode(), $e->getMessage());
-            parent::logMeThis(get_class($this).'::sendQuery() : '.$msg);
+            parent::logMeThis(get_class($this).'::sendQuery() : '.$msg, self::LOG_SUFFIX_SEND);
             trigger_error($msg, E_USER_ERROR);
         }
 
@@ -206,7 +207,7 @@ class ZeenDocConnector extends Connector {
     public function getCustomUri($context, $params) {
         $baseUrl = "";
 
-        parent::logMeThis('Call to method '.get_class($this).'::getCustomUri()', LOG_INFO);
+        parent::logMeThis('Call to method '.get_class($this).'::getCustomUri()', self::LOG_SUFFIX_SEND, LOG_INFO);
 
         switch($context) {
             case self::CONTEXT_SOURCE_ID:
@@ -261,7 +262,7 @@ class ZeenDocConnector extends Connector {
     public function fetchfile($alreadySentFile) {
         global $langs;
 
-        parent::logMeThis('Call to method '.get_class($this).'::fetchfile()', LOG_INFO);
+        parent::logMeThis('Call to method '.get_class($this).'::fetchfile()', self::LOG_SUFFIX_SEARCH, LOG_INFO);
 
         // Soap Call Preparation
         $wsdl = 'https://armoires.zeendoc.com/'.$this->urlClient.'/ws/1_0/wsdl.php?WSDL';
@@ -302,7 +303,7 @@ class ZeenDocConnector extends Connector {
                 ]));
         }
         else {
-            parent::logMeThis(get_class($this).'::fetchfile() : '.$langs->trans('WrongCredentialsZeendoc'));
+            parent::logMeThis(get_class($this).'::fetchfile() : '.$langs->trans('WrongCredentialsZeendoc'), self::LOG_SUFFIX_SEARCH);
             $this->output .= $langs->trans('WrongCredentialsZeendoc');
             $this->errors++;
         }
@@ -313,7 +314,7 @@ class ZeenDocConnector extends Connector {
      * @return mixed|SimpleXMLElement|string
      */
     public function send($fileToSend) {
-        parent::logMeThis('Call to method '.get_class($this).'::send()', LOG_INFO);
+        parent::logMeThis('Call to method '.get_class($this).'::send()', self::LOG_SUFFIX_SEND, LOG_INFO);
 
         $params = [
             'fileName' => $fileToSend->filename,
@@ -345,14 +346,14 @@ class ZeenDocConnector extends Connector {
             else {
                 // errors upload
                 $this->output .= $this->getLastXmlErrorMsg();
-                parent::logMeThis(get_class($this).'::send() upload errors : '.$this->output);
+                parent::logMeThis(get_class($this).'::send() upload errors : '.$this->output, self::LOG_SUFFIX_SEND);
                 $this->errors++;
             }
         }
         else {
             // errors pre-upload
             $this->output = $this->getLastXmlErrorMsg();
-            parent::logMeThis(get_class($this).'::send() pre-upload errors : '.$this->output);
+            parent::logMeThis(get_class($this).'::send() pre-upload errors : '.$this->output, self::LOG_SUFFIX_SEND);
             $this->errors++;
         }
     }

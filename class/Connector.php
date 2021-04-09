@@ -33,11 +33,12 @@ abstract class Connector extends SeedObject {
 
     /**
      * @param string $message
+     * @param string $logSuffix
      * @param int    $logLevel
      */
-    protected static function logMeThis($message, $logLevel = LOG_ERR): void {
+    protected static function logMeThis($message, $logSuffix, $logLevel = LOG_ERR): void {
         try {
-            dol_syslog($message, $logLevel, 0, static::LOG_SUFFIX);
+            dol_syslog($message, $logLevel, 0, $logSuffix);
         }
         catch(Exception $e) {}
     }
