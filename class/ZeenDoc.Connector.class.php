@@ -71,6 +71,8 @@ class ZeenDocConnector extends Connector {
      * @param stdClass $accountCredentials
      */
     public function setCredentials($accountCredentials) {
+        parent::logMeThis('Call to method '.get_class($this).'::setCredentials()', LOG_INFO);
+
         $this->login = $accountCredentials->login;
         $this->password = $accountCredentials->password;
         $this->urlClient = $accountCredentials->urlclient;
@@ -97,6 +99,8 @@ class ZeenDocConnector extends Connector {
      */
     public function sendQuery($context, $params) {
         global $langs;
+
+        parent::logMeThis('Call to method '.get_class($this).'::sendQuery()', LOG_INFO);
 
         // Construit l'url correcte selon le contexte donné en paramètre
         $baseUrl = $this->getCustomUri($context, $params);
@@ -202,6 +206,8 @@ class ZeenDocConnector extends Connector {
     public function getCustomUri($context, $params) {
         $baseUrl = "";
 
+        parent::logMeThis('Call to method '.get_class($this).'::getCustomUri()', LOG_INFO);
+
         switch($context) {
             case self::CONTEXT_SOURCE_ID:
                 $baseUrl = $this->baseUrl.'/'.self::URI_EDIT_END_POINT;
@@ -255,6 +261,8 @@ class ZeenDocConnector extends Connector {
     public function fetchfile($alreadySentFile) {
         global $langs;
 
+        parent::logMeThis('Call to method '.get_class($this).'::fetchfile()', LOG_INFO);
+
         // Soap Call Preparation
         $wsdl = 'https://armoires.zeendoc.com/'.$this->urlClient.'/ws/1_0/wsdl.php?WSDL';
 
@@ -305,6 +313,8 @@ class ZeenDocConnector extends Connector {
      * @return mixed|SimpleXMLElement|string
      */
     public function send($fileToSend) {
+        parent::logMeThis('Call to method '.get_class($this).'::send()', LOG_INFO);
+
         $params = [
             'fileName' => $fileToSend->filename,
             'path' => $fileToSend->filepath,
