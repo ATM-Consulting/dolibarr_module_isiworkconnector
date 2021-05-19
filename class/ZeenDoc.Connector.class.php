@@ -270,11 +270,21 @@ class ZeenDocConnector extends Connector {
         $client = new SoapClient($wsdl);
 
         // On transforme le retour SOAP en objet
-        $rights = json_decode($client->__soapCall('getRights', [
+        try {
+            $res = $client->__soapCall('getRights', [
                 new SoapParam($this->login, 'Login'),
                 new SoapParam('', 'Password'),
-                new SoapParam($this->password, 'CPassword'),
-            ]));
+                new SoapParam($this->password, 'CPassword')
+            ]);
+        }
+        catch(Exception $e) {
+            parent::logMeThis('TC caught an Exception : soapCall::getRights ; '.$e->getMessage(), self::LOG_SUFFIX_SEARCH);
+            $this->output .= $langs->trans('UnhandledException');
+            $this->errors++;
+            return false;
+        }
+
+        $rights = json_decode($res);
 
         // Si nous avons une Connexion
         if($rights->Result == 0) {
@@ -288,7 +298,8 @@ class ZeenDocConnector extends Connector {
             $IndexListAsSoapVarObject = new SoapVar([new SoapVar($complextTypeIndex1, SOAP_ENC_OBJECT, 'IndexDefinition', null, 'Index')], SOAP_ENC_OBJECT, 'ArrayOfIndexDefinition', null, 'IndexList');
 
             // Récupération des infos sur un document stocké chez ZeenDoc
-            return json_decode($client->__soapCall('searchDoc', [
+            try {
+                $res = $client->__soapCall('searchDoc', [
                     new SoapParam($this->login, 'Login'),
                     new SoapParam('', 'Password'),
                     new SoapParam($this->password, 'CPassword'),
@@ -300,7 +311,16 @@ class ZeenDocConnector extends Connector {
                     new SoapParam('', 'Order'),
                     new SoapParam('', 'saved_query'),
                     new SoapParam('', 'Query_Operator'),
-                ]));
+                ]);
+            }
+            catch(Exception $e) {
+                parent::logMeThis('TC caught an Exception : soapCall::searchDoc ; '.$e->getMessage(), self::LOG_SUFFIX_SEARCH);
+                $this->output .= $langs->trans('UnhandledException');
+                $this->errors++;
+                return false;
+            }
+
+            return json_decode($res);
         }
         else {
             parent::logMeThis(get_class($this).'::fetchfile() : '.$langs->trans('WrongCredentialsZeendoc'), self::LOG_SUFFIX_SEARCH);
